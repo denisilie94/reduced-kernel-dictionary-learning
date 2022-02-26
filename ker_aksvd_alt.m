@@ -1,6 +1,6 @@
 function [A, Z, errs, train_time] = ker_aksvd_alt( ...
     Y, A, D, n_nonzero_coefs_A, n_nonzero_coefs_D, max_iter_A, max_iter_D, ...
-    sigma, ompparams, alpha, lambda, train_D, use_lin ...
+    sigma, ompparams, alpha, lambda, train_D, use_lin, kernel_type ...
 )
 %KER_AKSVD Summary of this function goes here
 %   Detailed explanation goes here
@@ -13,15 +13,8 @@ function [A, Z, errs, train_time] = ker_aksvd_alt( ...
 
     % Compute kernel
     tmp_time = tic;
-    K_DD = zeros(n_components_D, n_components_D);
-    for i = 1:n_components_D
-       K_DD(i, :) = exp(-vecnorm(D(:, i) - D).^2 / sigma);
-    end
-
-    K_YD = zeros(n_samples, n_components_D);
-    for i = 1:n_samples
-        K_YD(i, :) = exp(-vecnorm(Y(:, i) - D).^2 / sigma);
-    end
+    K_DD = kernel_function(D, D, sigma, kernel_type);
+    K_YD = kernel_function(Y, D, sigma, kernel_type);
     kernel_time = toc(tmp_time);
 
     % start waitbar
@@ -58,22 +51,15 @@ function [A, Z, errs, train_time] = ker_aksvd_alt( ...
             X = omp(Y, D, n_nonzero_coefs_D);
 
             % optimize dictionary D
-            D = ker_update_D(Y, X, D, A, Z, sigma, alpha, lambda, max_iter_D, use_lin);
+            D = ker_update_D(Y, X, D, A, Z, sigma, alpha, lambda, max_iter_D, use_lin, kernel_type);
         end
         train_time = train_time + toc(tmp_time);
 
         % Compute current error
         if train_D
             % update kernels
-            K_DD = zeros(n_components_D, n_components_D);
-            for i = 1:n_components_D
-               K_DD(i, :) = exp(-vecnorm(D(:, i) - D).^2 / sigma);
-            end
-        
-            K_YD = zeros(n_samples, n_components_D);
-            for i = 1:n_samples
-                K_YD(i, :) = exp(-vecnorm(Y(:, i) - D).^2 / sigma);
-            end
+            K_DD = kernel_function(D, D, sigma, kernel_type);
+            K_YD = kernel_function(Y, D, sigma, kernel_type);
         end
 
         errs(i_iter) = trace(Z'*A'*K_DD*A*Z - 2*K_YD*A*Z);

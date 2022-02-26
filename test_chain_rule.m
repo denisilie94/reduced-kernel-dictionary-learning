@@ -2,9 +2,12 @@ clc;
 clear;
 close all;
 
-DataPath = 'Digits';
+% DataPath = 'Digits';
 % DataPath = 'MNIST';
-% DataPath = 'CIFAR-10';
+DataPath = 'CIFAR-10';
+
+% kernel_type = 'rbf';
+kernel_type = 'poly';
 
 switch DataPath
     case 'Digits'
@@ -16,7 +19,11 @@ switch DataPath
         Y = reshape(XTrain, 28*28, []);
 
         % Digits params
-        alpha = 0.0006;
+        if strcmp(kernel_type, 'rbf')
+            alpha = 0.0006;
+        else
+            alpha = 1e-7;
+        end
     case 'MNIST'
         % Load training and testing data
         oldpath = addpath(fullfile(matlabroot,'examples','nnet','main'));
@@ -32,7 +39,11 @@ switch DataPath
         Y = reshape(Y, 28*28, []);
         
         % MNIST params
-        alpha = 0.0005;
+        if strcmp(kernel_type, 'rbf')
+            alpha = 0.0005;
+        else
+            alpha = 1e-7;
+        end
     case 'CIFAR-10'
         % Load training and testing data
         [XTrain,YTrain,XValidation,YValidation] = loadCIFARData('dbs');
@@ -52,7 +63,11 @@ switch DataPath
         Y = reshape(Y, 32*32, []);
 
         % CIFAR-10 params
-        alpha = 0.0006;
+        if strcmp(kernel_type, 'rbf')
+            alpha = 0.0006;
+        else
+            alpha = 1e-7;
+        end
     otherwise
         fprintf('Error! Database not found!')
         return;
@@ -61,8 +76,15 @@ end
 % normalize signals
 Y = normc(Y);
 
+% rbf params
+% sigma = 1;
+
+% poly params
+sigma = {};
+sigma.a = 0;
+sigma.b = 2;
+
 max_iter = 10;
-sigma = 1;
 n_components = 128;
 n_features = size(Y, 1);
 n_samples = size(Y, 2);
@@ -70,15 +92,8 @@ n_samples = size(Y, 2);
 D = randn(n_features, n_components); D = normc(D);
 C = randn(n_components, n_samples);
 
-K_DD = zeros(n_components, n_components);
-for i = 1:n_components
-   K_DD(i, :) = exp(-vecnorm(D(:, i) - D).^2 / sigma);
-end
-
-K_YD = zeros(n_samples, n_components);
-for i = 1:n_samples
-    K_YD(i, :) = exp(-vecnorm(Y(:, i) - D).^2 / sigma);
-end
+K_DD = kernel_function(D, D, sigma, kernel_type);
+K_YD = kernel_function(Y, D, sigma, kernel_type);
 
 % C = A*X;
 CCT = C*C';
@@ -89,7 +104,7 @@ error(1) = trace(C'*K_DD*C - 2*K_YD*C);
 for iter = 1:max_iter
     disp(iter);
     for i = 1:n_components       
-        dK1 = (- 2 * exp(-vecnorm(D(:, i) - D).^2 / sigma) / sigma .* (D(:, i) - D))';
+        dK1 = dkernel_function(D(:, i), D, sigma, kernel_type);
         dfK1 = repmat(CCT(i, :)', 1, n_features) .* dK1;
         dfK1 = dfK1 + repmat(CCT(:, i), 1, n_features) .* dK1;
         dfK1 = dfK1 - CCT(i, i) * dK1(i, :); 
@@ -97,22 +112,15 @@ for iter = 1:max_iter
 
         % -----------------------------------
 
-        dK2 = (- 2 * exp(-vecnorm(D(:, i) - Y).^2 / sigma) / sigma .* (D(:, i) - Y))';
+        dK2 = dkernel_function(D(:, i), Y, sigma, kernel_type);
         dfK2 = repmat(C(i, :)', 1, n_features) .* dK2;
         dfK2 = sum(dfK2)';
        
         D(:, i) = D(:, i) - alpha * (dfK1 - 2*dfK2);
     end
 
-    K_DD = zeros(n_components, n_components);
-    for i = 1:n_components
-       K_DD(i, :) = exp(-vecnorm(D(:, i) - D).^2 / sigma);
-    end
-    
-    K_YD = zeros(n_samples, n_components);
-    for i = 1:n_samples
-        K_YD(i, :) = exp(-vecnorm(Y(:, i) - D).^2 / sigma);
-    end
+    K_DD = kernel_function(D, D, sigma, kernel_type);
+    K_YD = kernel_function(Y, D, sigma, kernel_type);
     error(iter + 1) = trace(C'*K_DD*C - 2*K_YD*C);
 end
 

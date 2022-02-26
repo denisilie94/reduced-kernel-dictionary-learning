@@ -2,6 +2,16 @@ clc;
 clear;
 close all;
 
+kernel_type = 'rbf';
+
+% rbf params
+sigma = 10;
+
+% poly params
+% sigma = {};
+% sigma.a = 0;
+% sigma.b = 2;
+
 DataPath = 'Digits';
 % DataPath = 'MNIST';
 % DataPath = 'CIFAR-10';
@@ -62,10 +72,9 @@ end
 Y = normc(Y);
 
 % DL parameters
-sigma = 10;
 lambda = 1;
 train_D = 1;
-n_rounds = 10;
+n_rounds = 1;
 ompparams = {'checkdict', 'off'};
 
 max_iter_D = 3;
@@ -103,7 +112,7 @@ for n_round = 1:n_rounds
     A = normcol_equal(randn(n_samples, n_components_A));
     
     [A0, X0, errs0, train_time0] = ker_aksvd(Y, A, n_nonzero_coefs_A, ...
-                                             max_iter_A, sigma);
+                                             max_iter_A, sigma, kernel_type);
     
     % Run Kernel AK-SVD-D
     disp('Standard Kernel AK-SVD-D')
@@ -111,7 +120,7 @@ for n_round = 1:n_rounds
     
     [A1, Z1, errs1, train_time1] = ker_aksvd_alt(...
         Y, A, D, n_nonzero_coefs_A, n_nonzero_coefs_D, max_iter_A, max_iter_D, ...
-        sigma, ompparams, alpha, lambda, 0, 0 ...
+        sigma, ompparams, alpha, lambda, 0, 0, kernel_type ...
     );
     train_time1 = train_time1 + train_time_D;
     
@@ -119,7 +128,7 @@ for n_round = 1:n_rounds
     disp('Standard Kernel AK-SVD-D trained D')
     [A2, Z2, errs2, train_time2] = ker_aksvd_alt(...
         Y, A, D, n_nonzero_coefs_A, n_nonzero_coefs_D, max_iter_A, max_iter_D, ...
-        sigma, ompparams, alpha, lambda, 1, 0 ...
+        sigma, ompparams, alpha, lambda, 1, 0, kernel_type ...
     );
     train_time2 = train_time2 + train_time_D;
     
@@ -127,14 +136,14 @@ for n_round = 1:n_rounds
     disp('Standard Kernel AK-SVD-D trained D')
     [A3, Z3, errs3, train_time3] = ker_aksvd_alt(...
         Y, A, D, n_nonzero_coefs_A, n_nonzero_coefs_D, max_iter_A, max_iter_D, ...
-        sigma, ompparams, alpha, lambda, 1, 0 ...
+        sigma, ompparams, alpha, lambda, 1, 0, kernel_type ...
     );
     train_time3 = train_time3 + train_time_D;
     
     % K_YY trace
     s = 0;
     for i = 1:n_samples
-        s = s + kernel_function(Y(:, i), Y(:, i), sigma);
+        s = s + kernel_function(Y(:, i), Y(:, i), sigma, kernel_type);
     end
     
     errs0 = sqrt(errs0 + s); % / (n_samples);

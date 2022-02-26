@@ -1,4 +1,4 @@
-function [A, X, errs, train_time] = ker_aksvd(Y, A, n_nonzero_coefs, max_iter, sigma)
+function [A, X, errs, train_time] = ker_aksvd(Y, A, n_nonzero_coefs, max_iter, sigma, kernel_type)
 %KER_AKSVD Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -8,10 +8,7 @@ function [A, X, errs, train_time] = ker_aksvd(Y, A, n_nonzero_coefs, max_iter, s
 
     % Compute kernel
     tmp_time = tic;
-    K = zeros(n_samples, n_samples);
-    for i = 1:n_samples
-       K(i, :) = exp(-vecnorm(Y(:, i) - Y).^2 / sigma);
-    end
+    K = kernel_function(Y, Y, sigma, kernel_type);
     kernel_time = toc(tmp_time);
 
     % start waitbar

@@ -1,4 +1,4 @@
-function [D] = ker_update_D(Y, X, D, A, Z, sigma, alpha, lambda, max_iter, use_lin)
+function [D] = ker_update_D(Y, X, D, A, Z, sigma, alpha, lambda, max_iter, use_lin, kernel_type)
     % n_components -  the number of atoms
     % n_samples - number of atoms
     % sigma - rbf parameter
@@ -11,7 +11,7 @@ function [D] = ker_update_D(Y, X, D, A, Z, sigma, alpha, lambda, max_iter, use_l
 
     for iter = 1:max_iter
         for i = 1:n_components
-            dK1 = (- 2 * exp(-vecnorm(D(:, i) - D).^2 / sigma) / sigma .* (D(:, i) - D))';
+            dK1 = dkernel_function(D(:, i), D, sigma, kernel_type);
             dfK1 = repmat(CCT(i, :)', 1, n_features) .* dK1;
             dfK1 = dfK1 + repmat(CCT(:, i), 1, n_features) .* dK1;
             dfK1 = dfK1 - CCT(i, i) * dK1(i, :); 
@@ -19,7 +19,7 @@ function [D] = ker_update_D(Y, X, D, A, Z, sigma, alpha, lambda, max_iter, use_l
 
             % -----------------------------------
 
-            dK2 = (- 2 * exp(-vecnorm(D(:, i) - Y).^2 / sigma) / sigma .* (D(:, i) - Y))';
+            dK2 = dkernel_function(D(:, i), Y, sigma, kernel_type);
             dfK2 = repmat(C(i, :)', 1, n_features) .* dK2;
             dfK2 = sum(dfK2)';
 
