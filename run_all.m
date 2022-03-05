@@ -12,9 +12,9 @@ sigma = 10;
 % sigma.a = 0;
 % sigma.b = 2;
 
-DataPath = 'Digits';
+% DataPath = 'Digits';
 % DataPath = 'MNIST';
-% DataPath = 'CIFAR-10';
+DataPath = 'CIFAR-10';
 
 switch DataPath
     case 'Digits'
@@ -146,10 +146,10 @@ for n_round = 1:n_rounds
         s = s + kernel_function(Y(:, i), Y(:, i), sigma, kernel_type);
     end
     
-    errs0 = sqrt(errs0 + s); % / (n_samples);
-    errs1 = sqrt(errs1 + s); % / (n_samples);
-    errs2 = sqrt(errs2 + s); % / (n_samples);
-    errs3 = sqrt(errs3 + s); % / (n_samples);
+    errs0 = sqrt(errs0 + s);
+    errs1 = sqrt(errs1 + s);
+    errs2 = sqrt(errs2 + s);
+    errs3 = sqrt(errs3 + s);
 
     r_train_time0 = r_train_time0 + train_time0;
     r_train_time1 = r_train_time1 + train_time1;
@@ -172,7 +172,13 @@ r_errs1 = r_errs1 / n_rounds;
 r_errs2 = r_errs2 / n_rounds;
 r_errs3 = r_errs3 / n_rounds;
 
+r_errs0 = r_errs0 / sqrt(size(Y, 1)*size(Y, 2));
+r_errs1 = r_errs1 / sqrt(size(Y, 1)*size(Y, 2));
+r_errs2 = r_errs2 / sqrt(size(Y, 1)*size(Y, 2));
+r_errs3 = r_errs3 / sqrt(size(Y, 1)*size(Y, 2));
+
 figure;
+grid on;
 hold on;
 plot(1:max_iter_A, r_errs0);
 plot(1:max_iter_A, r_errs1);
@@ -180,10 +186,11 @@ plot(1:max_iter_A, r_errs2);
 plot(1:max_iter_A, r_errs3);
 xlabel('iter')
 ylabel('err')
-legend(sprintf('KDL err=%0.4f time=%0.4f', r_errs0(end), r_train_time0), ...
-       sprintf('RKDL-D err=%0.4f time=%0.4f', r_errs1(end), r_train_time1), ...
-       sprintf('RKDL-trD err=%0.4f time=%0.4f', r_errs2(end), r_train_time2), ...
-       sprintf('RKDL-lintrD err=%0.4f time=%0.4f', r_errs3(end), r_train_time3))
+legend('KDL', 'RKDL-D', 'ORKDL-D', 'MORKDL-D')
+% legend(sprintf('KDL err=%0.4f time=%0.4f', r_errs0(end), r_train_time0), ...
+%        sprintf('RKDL-D err=%0.4f time=%0.4f', r_errs1(end), r_train_time1), ...
+%        sprintf('ORKDL-D err=%0.4f time=%0.4f', r_errs2(end), r_train_time2), ...
+%        sprintf('MORKDL-D err=%0.4f time=%0.4f', r_errs3(end), r_train_time3))
 
 save(strcat(DataPath, '_results'), 'r_errs0', 'r_errs1', 'r_errs2', 'r_errs3', ...
             'r_train_time0', 'r_train_time1', 'r_train_time2', 'r_train_time3')
